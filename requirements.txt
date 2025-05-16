@@ -1,0 +1,11 @@
+streamlit
+pandas
+sentence-transformers
+qdrant-client
+chromadb
+langchain
+langchain-community
+python-dotenv
+numpy
+regex
+ollama
