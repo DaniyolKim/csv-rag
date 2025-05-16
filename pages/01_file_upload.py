@@ -21,6 +21,9 @@ st.session_state.vector_backend = st.sidebar.selectbox(
 st.sidebar.subheader("전처리 옵션")
 drop_na = st.sidebar.slider("최대 결측치 허용 비율 (%)", 0, 100, 50)
 use_ai_filter = st.sidebar.checkbox("AI 기반 광고/홍보 필터링 활성화", True)
+split_sentences = st.sidebar.checkbox("문장 단위로 분리하여 저장", True)
+use_clustering = st.sidebar.checkbox("클러스터링 적용", True)
+n_clusters = st.sidebar.slider("클러스터 수", min_value=2, max_value=20, value=5)
     
 # 컬렉션 이름 입력 추가
 collection_name = st.sidebar.text_input("컬렉션 이름", "docs")
@@ -58,7 +61,7 @@ try:
     
     # 텍스트 데이터만 전처리기에 전달
     pre = Preprocessor(text_df)
-    df_clean = pre.run(drop_na_ratio=drop_na/100, ai_filter=use_ai_filter)
+    df_clean = pre.run(drop_na_ratio=drop_na/100, ai_filter=use_ai_filter, split_sentences=split_sentences)
     
     # 전처리 후 데이터 표시
     st.subheader("전처리 후 데이터")
@@ -102,10 +105,18 @@ try:
             status_text = st.empty()
             
             try:
-                store.ingest(total_texts, batch_size=batch_size)
+                # 클러스터링 옵션 전달
+                store.ingest(total_texts, batch_size=batch_size, cluster=use_clustering, n_clusters=n_clusters)
                 progress_bar.progress(100)
                 status_text.text(f"처리 완료: {len(total_texts)}/{len(total_texts)} (100%)")
                 st.success(f"벡터 저장 완료 (컬렉션: {collection_name})")
+                
+                # 문장 분리 및 클러스터링 정보 표시
+                if split_sentences:
+                    st.info(f"문장 단위로 분리하여 저장되었습니다.")
+                if use_clustering:
+                    st.info(f"{n_clusters}개의 클러스터로 그룹화되었습니다.")
+                
                 st.info("이제 메인 페이지에서 질문을 할 수 있습니다.")
             except Exception as e:
                 st.error(f"저장 중 오류 발생: {str(e)}")

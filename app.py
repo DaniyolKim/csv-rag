@@ -2,6 +2,7 @@ import streamlit as st
 from agent import RetrievalAgent
 from storage import VectorStore
 import os
+import pandas as pd
 
 # 페이지 설정
 st.set_page_config(
@@ -56,10 +57,30 @@ if query:
                 
                 # 참고 문서 표시
                 with st.expander("참고 문서", expanded=False):
-                    for i, doc in enumerate(result["sources"]):
-                        st.markdown(f"**문서 {i+1}**")
-                        st.info(doc)
-                        st.divider()
+                    if "sources_metadata" in result:
+                        # 클러스터별로 그룹화
+                        clusters = {}
+                        for source in result["sources_metadata"]:
+                            cluster = source["cluster"]
+                            if cluster not in clusters:
+                                clusters[cluster] = []
+                            clusters[cluster].append(source)
+                        
+                        # 클러스터별로 표시
+                        for cluster_id, sources in clusters.items():
+                            st.markdown(f"### 클러스터 {cluster_id}")
+                            for i, source in enumerate(sources):
+                                st.markdown(f"**문서 {i+1}** (문서 ID: {source['doc_id']})")
+                                st.info(source["text"])
+                                if "score" in source:
+                                    st.caption(f"유사도 점수: {source['score']:.4f}")
+                                st.divider()
+                    else:
+                        # 기존 방식으로 표시
+                        for i, doc in enumerate(result["sources"]):
+                            st.markdown(f"**문서 {i+1}**")
+                            st.info(doc)
+                            st.divider()
         except Exception as e:
             st.error(f"오류가 발생했습니다: {str(e)}")
             st.exception(e)
